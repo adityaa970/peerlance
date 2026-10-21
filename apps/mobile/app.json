@@ -1,0 +1,87 @@
+{
+  "expo": {
+    "name": "Peerlance",
+    "slug": "peerlance",
+    "version": "1.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "myapp",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#F8FAFC"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#F8FAFC",
+        "dark": {
+          "image": "./assets/images/splash-icon.png",
+          "backgroundColor": "#0B1020"
+        }
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#F8FAFC"
+      },
+      "splash": {
+        "image": "./assets/images/splash-icon.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#F8FAFC",
+        "dark": {
+          "image": "./assets/images/splash-icon.png",
+          "backgroundColor": "#0B1020",
+          "resizeMode": "contain"
+        }
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.aditya9738d.peerlance",
+      "googleServicesFile": "./google-services.json",
+      "notification": {
+        "icon": "./assets/images/notification-icon.png",
+        "color": "#6C5CE7"
+      }
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "packagingOptions": {
+              "pickFirst": [
+                "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+              ]
+            }
+          }
+        }
+      ],
+      "expo-router",
+      "expo-secure-store",
+      "@react-native-community/datetimepicker",
+      "expo-build-properties",
+      "expo-notifications"
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b6eceae6-43fb-4641-931f-1c75f5d3ecd5"
+      }
+    },
+    "owner": "aditya9738d"
+  }
+}

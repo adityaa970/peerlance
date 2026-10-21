@@ -1,0 +1,46 @@
+# Files EAS Build should NOT upload. When this file exists, EAS uses it instead of .gitignore.
+# Same as .gitignore, except .env IS uploaded: it only holds public EXPO_PUBLIC_* values
+# (API URL, Clerk publishable key, etc.) that the app needs at build time.
+# .env.local is excluded on purpose: it points at a local dev server.
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files (dev-only overrides)
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+# generated native folders
+/ios
+/android
+
+.vercel

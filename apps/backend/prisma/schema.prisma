@@ -1,0 +1,293 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id              String        @id @default(uuid())
+  clerkId         String        @unique
+  email           String        @unique
+  name            String
+  phone           String?
+  college         String
+  collegeDomain   String
+  avatarUrl       String?
+  idCardUrl       String?
+  description     String?
+  showcaseUrls    String[]      @default([])
+  role            String        @default("poster")
+  isVerified      Boolean       @default(false)
+  isActive        Boolean       @default(false)
+  isPublicProfile Boolean       @default(true)
+  taskScope       String        @default("college") // college | district
+  district        String?
+  isBanned        Boolean       @default(false)
+
+  // Trust metrics
+  trustScore      Float         @default(100.0)
+  completionRate  Float         @default(0.0)
+  totalCompleted  Int           @default(0)
+  totalCancelled  Int           @default(0)
+  avgRatingGiven  Float?
+  avgRatingRecvd  Float?
+
+  // Referral System
+  referralCode    String?       @unique
+  referredById    String?
+  referredBy      User?         @relation("UserReferrals", fields: [referredById], references: [id])
+  referrals       User[]        @relation("UserReferrals")
+
+  // Wallet (virtual, platform-managed)
+  walletBalance   Float         @default(0.0)
+  promoBalance    Float         @default(0.0) // Non-withdrawable
+  earnedBalance   Float         @default(0.0) // Withdrawable
+
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tasksPosted     Task[]        @relation("TaskPoster")
+  tasksClaimed    Task[]        @relation("TaskWorker")
+  ratingsGiven    Rating[]      @relation("RatingGiver")
+  ratingsReceived Rating[]      @relation("RatingReceiver")
+  reports         Report[]
+  transactions    Transaction[]
+  messages        Message[]
+  depositRequests DepositRequest[]
+  withdrawRequests WithdrawRequest[]
+}
+
+model Task {
+  id              String      @id @default(uuid())
+  title           String
+  description     String
+  category        TaskCategory
+  status          TaskStatus  @default(OPEN)
+
+  // Pricing
+  budget          Float
+  platformFee     Float       @default(0.0)
+  workerPayout    Float       @default(0.0)
+
+  // Location
+  campusLocation  String
+  college         String
+
+  // Time
+  deadline        DateTime
+  postedAt        DateTime    @default(now())
+  claimedAt       DateTime?
+  completedAt     DateTime?
+  autoReleaseAt   DateTime?
+
+  // Proof
+  proofPhotoUrl   String?
+
+  // Relations
+  posterId        String
+  poster          User        @relation("TaskPoster", fields: [posterId], references: [id])
+  workerId        String?
+  worker          User?       @relation("TaskWorker", fields: [workerId], references: [id])
+
+  payment         Payment?
+  ratings         Rating[]
+  reports         Report[]
+  messages        Message[]
+
+  updatedAt       DateTime    @updatedAt
+}
+
+enum TaskCategory {
+  FOOD
+  PRINTOUT
+  ERRAND
+  EVENT_HELP
+  DELIVERY
+  LAB_ASSISTANCE
+  OTHER
+}
+
+enum TaskStatus {
+  OPEN          // Posted, waiting for claim
+  CLAIMED       // Worker assigned, payment in escrow
+  IN_PROGRESS   // Worker confirmed start
+  COMPLETED     // Poster marked done OR auto-released
+  CANCELLED     // Cancelled before claim
+  DISPUTED      // Under manual review
+  REFUNDED      // Worker failed, poster refunded
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  taskId          String        @unique
+  task            Task          @relation(fields: [taskId], references: [id])
+  posterId        String
+  workerId        String?
+  amount          Float
+  platformFee     Float
+  workerPayout    Float
+  status          PaymentStatus @default(PENDING)
+  razorpayOrderId String?
+  razorpayPaymentId String?
+  createdAt       DateTime      @default(now())
+  releasedAt      DateTime?
+  refundedAt      DateTime?
+}
+
+enum PaymentStatus {
+  PENDING
+  ESCROWED
+  RELEASED
+  REFUNDED
+  DISPUTED
+}
+
+model Transaction {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id])
+  type      String    // CREDIT | DEBIT | FEE
+  amount    Float
+  note      String
+  createdAt DateTime  @default(now())
+}
+
+model Rating {
+  id          String   @id @default(uuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  giverId     String
+  giver       User     @relation("RatingGiver", fields: [giverId], references: [id])
+  receiverId  String
+  receiver    User     @relation("RatingReceiver", fields: [receiverId], references: [id])
+  score       Int      // 1–5
+  comment     String?
+  role        String   // POSTER | WORKER
+  createdAt   DateTime @default(now())
+}
+
+model Report {
+  id          String       @id @default(uuid())
+  reporterId  String
+  reporter    User         @relation(fields: [reporterId], references: [id])
+  taskId      String?
+  task        Task?        @relation(fields: [taskId], references: [id])
+  reason      ReportReason
+  description String?
+  status      String       @default("OPEN")
+  createdAt   DateTime     @default(now())
+}
+
+enum ReportReason {
+  INAPPROPRIATE_TASK
+  FAKE_COMPLETION
+  HARASSMENT
+  CHEATING_ASSIGNMENT
+  NO_SHOW
+  OTHER
+}
+
+model Message {
+  id          String   @id @default(uuid())
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  senderId    String
+  sender      User     @relation(fields: [senderId], references: [id])
+  text        String
+  createdAt   DateTime @default(now())
+}
+
+model IdVerification {
+  id              String      @id @default(uuid())
+  email           String      @unique
+  idCardUrl       String
+  status          VerificationStatus @default(PENDING)
+  extractedName   String?
+  extractedCollege String?
+  rollNumber       String?
+  course           String?
+  yearSemester     String?
+  academicSession  String?
+  expiryDate       String?
+  bloodGroup       String?
+  address          String?
+  barcodeData      String?
+  emergencyContact String?
+  analysis        Json?       // Full AI response
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+enum VerificationStatus {
+  PENDING
+  AI_PASSED
+  VERIFIED
+  REJECTED
+  FAILED
+}
+
+model DepositRequest {
+  id            String         @id @default(uuid())
+  userId        String
+  user          User           @relation(fields: [userId], references: [id])
+  amount        Float
+  screenshotUrl String
+  transactionId String?
+  status        DepositStatus @default(PENDING)
+  adminNote     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+enum DepositStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model WithdrawRequest {
+  id              String         @id @default(uuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id])
+  amount          Float
+  method          String         // UPI | BANK
+  details         Json           // { upiId: string } or { bankName: string, accountNumber: string, ifsc: string }
+  status          WithdrawStatus @default(PENDING)
+  adminNote       String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+enum WithdrawStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model AppVersion {
+  id          String   @id @default(uuid())
+  platform    String   // android | ios
+  versionCode Int
+  versionName String
+  changelog   Json     @default("[]")
+  isMandatory Boolean  @default(false)
+  updateUrl   String
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([platform, versionCode])
+}
+
+model SystemSettings {
+  id                    String @id @default("default")
+  writerFirstTaskBonus  Float  @default(10.0)
+  writerCommissionRate  Float  @default(0.02)
+  posterFirstTaskBonus  Float  @default(10.0)
+  posterMilestoneBonus  Float  @default(40.0)
+  posterMilestoneCount  Int    @default(2)
+  updatedAt             DateTime @updatedAt
+}
